@@ -701,10 +701,10 @@ func (p *ClassParser) extractPackageFromType(typeName string) string {
 	if typeName == "" {
 		return ""
 	}
-	
+
 	// Remove pointer prefix
 	cleanType := strings.TrimPrefix(typeName, "*")
-	
+
 	// Check if it contains a dot (package.Type format)
 	if strings.Contains(cleanType, ".") {
 		parts := strings.Split(cleanType, ".")
@@ -713,7 +713,7 @@ func (p *ClassParser) extractPackageFromType(typeName string) string {
 			return strings.Join(parts[:len(parts)-1], ".")
 		}
 	}
-	
+
 	// Check if this type exists in any of our parsed packages
 	for packageName, structures := range p.structure {
 		for structName := range structures {
@@ -722,7 +722,7 @@ func (p *ClassParser) extractPackageFromType(typeName string) string {
 			}
 		}
 	}
-	
+
 	return ""
 }
 
@@ -739,43 +739,43 @@ func (p *ClassParser) findPackagesByPattern(pattern string) []string {
 
 // renderLayerDependencies はレイヤー間の依存関係を矢印で表現する
 func (p *ClassParser) renderLayerDependencies(str *LineStringBuilder, fromLayer, toLayer, relationship string) {
-    fromPackages := p.findPackagesByPattern(fromLayer)
-    toPackages := p.findPackagesByPattern(toLayer)
-    for _, fromPkg := range fromPackages {
-        for fromStruct := range p.structure[fromPkg] {
-            for _, toPkg := range toPackages {
-                for toStruct := range p.structure[toPkg] {
-                    fromFull := fmt.Sprintf("%s.%s", fromPkg, fromStruct)
-                    toFull := fmt.Sprintf("%s.%s", toPkg, toStruct)
-                    p.emitArrow(str, 0, fmt.Sprintf(`%s ..> %s : %s`, fromFull, toFull, relationship), "layer")
-                }
-            }
-        }
-    }
+	fromPackages := p.findPackagesByPattern(fromLayer)
+	toPackages := p.findPackagesByPattern(toLayer)
+	for _, fromPkg := range fromPackages {
+		for fromStruct := range p.structure[fromPkg] {
+			for _, toPkg := range toPackages {
+				for toStruct := range p.structure[toPkg] {
+					fromFull := fmt.Sprintf("%s.%s", fromPkg, fromStruct)
+					toFull := fmt.Sprintf("%s.%s", toPkg, toStruct)
+					p.emitArrow(str, 0, fmt.Sprintf(`%s ..> %s : %s`, fromFull, toFull, relationship), "layer")
+				}
+			}
+		}
+	}
 }
 
 // renderResourceDependencies renders architectural dependencies between layers
 func (p *ClassParser) renderResourceDependencies(str *LineStringBuilder) {
-    str.WriteLineWithDepth(0, "")
-    str.WriteLineWithDepth(0, "'=== Architectural Dependencies ===")
-    p.renderLayerDependencies(str, "controller", "usecase", "calls")
-    p.renderLayerDependencies(str, "handler", "service", "calls")
-    p.renderLayerDependencies(str, "usecase", "repository", "uses")
-    p.renderLayerDependencies(str, "service", "repository", "uses")
-    p.renderLayerDependencies(str, "repository", "model", "manages")
-    p.renderLayerDependencies(str, "repository", "entity", "manages")
+	str.WriteLineWithDepth(0, "")
+	str.WriteLineWithDepth(0, "'=== Architectural Dependencies ===")
+	p.renderLayerDependencies(str, "controller", "usecase", "calls")
+	p.renderLayerDependencies(str, "handler", "service", "calls")
+	p.renderLayerDependencies(str, "usecase", "repository", "uses")
+	p.renderLayerDependencies(str, "service", "repository", "uses")
+	p.renderLayerDependencies(str, "repository", "model", "manages")
+	p.renderLayerDependencies(str, "repository", "entity", "manages")
 }
 
 // renderPackageDependencies renders dependencies between packages only
 func (p *ClassParser) renderPackageDependencies(str *LineStringBuilder) {
 	packageDeps := make(map[string]map[string]struct{}) // source -> targets
-	
+
 	// Collect all package dependencies
 	for pack, structures := range p.structure {
 		if packageDeps[pack] == nil {
 			packageDeps[pack] = make(map[string]struct{})
 		}
-		
+
 		for _, st := range structures {
 			// Check all aggregations
 			for aggr := range st.Aggregations {
@@ -786,7 +786,7 @@ func (p *ClassParser) renderPackageDependencies(str *LineStringBuilder) {
 					}
 				}
 			}
-			
+
 			// Check private aggregations if enabled
 			if p.renderingOptions.AggregatePrivateMembers {
 				for aggr := range st.PrivateAggregations {
@@ -798,7 +798,7 @@ func (p *ClassParser) renderPackageDependencies(str *LineStringBuilder) {
 					}
 				}
 			}
-			
+
 			// Check compositions
 			if p.renderingOptions.Compositions {
 				for comp := range st.Composition {
@@ -810,7 +810,7 @@ func (p *ClassParser) renderPackageDependencies(str *LineStringBuilder) {
 					}
 				}
 			}
-			
+
 			// Check extends
 			for base := range st.Extends {
 				if p.isDependencyValid(base, structures) {
@@ -822,7 +822,7 @@ func (p *ClassParser) renderPackageDependencies(str *LineStringBuilder) {
 			}
 		}
 	}
-	
+
 	// Output package-level dependencies
 	str.WriteLineWithDepth(0, "")
 	str.WriteLineWithDepth(0, "'=== Package Dependencies ===")
@@ -835,58 +835,58 @@ func (p *ClassParser) renderPackageDependencies(str *LineStringBuilder) {
 
 // Render returns a string of the class diagram that this parser has generated.
 func (p *ClassParser) Render() string {
-    str := &LineStringBuilder{}
-    str.WriteLineWithDepth(0, "@startuml")
-    // Set default direction to top-down for vertical layout (縦方向に長く)
-    str.WriteLineWithDepth(0, "!define DIRECTION top to bottom direction")
-    str.WriteLineWithDepth(0, "top to bottom direction")
-    str.WriteLineWithDepth(0, "skinparam linetype ortho")
+	str := &LineStringBuilder{}
+	str.WriteLineWithDepth(0, "@startuml")
+	// Set default direction to top-down for vertical layout (縦方向に長く)
+	str.WriteLineWithDepth(0, "!define DIRECTION top to bottom direction")
+	str.WriteLineWithDepth(0, "top to bottom direction")
+	str.WriteLineWithDepth(0, "skinparam linetype ortho")
 
-    if p.renderingOptions.Title != "" {
-        str.WriteLineWithDepth(0, fmt.Sprintf(`title %s`, p.renderingOptions.Title))
-    }
-    if note := strings.TrimSpace(p.renderingOptions.Notes); note != "" {
-        str.WriteLineWithDepth(0, "legend")
-        str.WriteLineWithDepth(0, note)
-        str.WriteLineWithDepth(0, "end legend")
-    }
+	if p.renderingOptions.Title != "" {
+		str.WriteLineWithDepth(0, fmt.Sprintf(`title %s`, p.renderingOptions.Title))
+	}
+	if note := strings.TrimSpace(p.renderingOptions.Notes); note != "" {
+		str.WriteLineWithDepth(0, "legend")
+		str.WriteLineWithDepth(0, note)
+		str.WriteLineWithDepth(0, "end legend")
+	}
 
-    var packages []string
-    for pack := range p.structure {
-        packages = append(packages, pack)
-    }
-    sort.Strings(packages)
-    for _, pack := range packages {
-        structures := p.structure[pack]
-        p.renderStructures(pack, structures, str)
-    }
+	var packages []string
+	for pack := range p.structure {
+		packages = append(packages, pack)
+	}
+	sort.Strings(packages)
+	for _, pack := range packages {
+		structures := p.structure[pack]
+		p.renderStructures(pack, structures, str)
+	}
 
-    // removed category.* virtual namespaces (vertical grouping now inline)
+	// removed category.* virtual namespaces (vertical grouping now inline)
 
-    // Render package-level dependencies instead of individual class dependencies
-    p.renderPackageDependencies(str)
+	// Render package-level dependencies instead of individual class dependencies
+	p.renderPackageDependencies(str)
 
-    // Disable detailed architectural dependencies to focus on package-level view
-    // if p.renderingOptions.Aggregations {
-    //     p.renderResourceDependencies(str)
-    // }
-    // 矢印統計出力
-    p.renderArrowStats(str)
-    if !p.renderingOptions.Fields {
-        str.WriteLineWithDepth(0, "hide fields")
-    }
-    if !p.renderingOptions.Methods {
-        str.WriteLineWithDepth(0, "hide methods")
-    }
-    str.WriteLineWithDepth(0, "@enduml")
-    return str.String()
+	// Disable detailed architectural dependencies to focus on package-level view
+	// if p.renderingOptions.Aggregations {
+	//     p.renderResourceDependencies(str)
+	// }
+	// 矢印統計出力
+	p.renderArrowStats(str)
+	if !p.renderingOptions.Fields {
+		str.WriteLineWithDepth(0, "hide fields")
+	}
+	if !p.renderingOptions.Methods {
+		str.WriteLineWithDepth(0, "hide methods")
+	}
+	str.WriteLineWithDepth(0, "@enduml")
+	return str.String()
 }
 
 // renderStructures renders all structures in a package
 func (p *ClassParser) renderStructures(pack string, structures map[string]*Struct, str *LineStringBuilder) {
 	if len(structures) > 0 {
 		str.WriteLineWithDepth(0, fmt.Sprintf(`namespace %s {`, pack))
-		
+
 		// collect and sort names by category precedence then name
 		var names []string
 		for n := range structures {
@@ -917,7 +917,7 @@ func (p *ClassParser) renderStructures(pack string, structures map[string]*Struc
 			}
 			return false
 		})
-		
+
 		// Group by category and render with frames
 		categories := make(map[string][]string)
 		for _, name := range names {
@@ -927,7 +927,7 @@ func (p *ClassParser) renderStructures(pack string, structures map[string]*Struc
 			}
 			categories[cat] = append(categories[cat], name)
 		}
-		
+
 		// Render categories in precedence order
 		for _, cat := range precedence {
 			if items, ok := categories[cat]; ok {
@@ -938,14 +938,14 @@ func (p *ClassParser) renderStructures(pack string, structures map[string]*Struc
 				str.WriteLineWithDepth(1, "}")
 			}
 		}
-		
+
 		// Render uncategorized items
 		if items, ok := categories["General"]; ok {
 			for _, name := range items {
 				p.renderStructure(structures[name], name, str)
 			}
 		}
-		
+
 		// Only render interface implementation arrows within the same package
 		p.renderInterfaceImplementationArrows(pack, structures, str)
 		// Don't render individual dependencies here - will be handled at package level
@@ -1042,36 +1042,36 @@ func isExported(name string) bool {
 
 // renderArrowStats renders arrow usage statistics
 func (p *ClassParser) renderArrowStats(str *LineStringBuilder) {
-    if len(p.arrowStats) == 0 {
-        return
-    }
-    str.WriteLineWithDepth(0, "")
-    str.WriteLineWithDepth(0, "'=== Arrow Stats ===")
-    keys := make([]string, 0, len(p.arrowStats))
-    for k := range p.arrowStats {
-        keys = append(keys, k)
-    }
-    sort.Strings(keys)
-    for _, k := range keys {
-        str.WriteLineWithDepth(0, fmt.Sprintf("' %s: %d", k, p.arrowStats[k]))
-    }
+	if len(p.arrowStats) == 0 {
+		return
+	}
+	str.WriteLineWithDepth(0, "")
+	str.WriteLineWithDepth(0, "'=== Arrow Stats ===")
+	keys := make([]string, 0, len(p.arrowStats))
+	for k := range p.arrowStats {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		str.WriteLineWithDepth(0, fmt.Sprintf("' %s: %d", k, p.arrowStats[k]))
+	}
 }
 
 func (p *ClassParser) isDependencyValid(dep string, structures map[string]*Struct) bool {
-    if dep == "" || isPrimitiveString(dep) {
-        return false
-    }
-    // 配列/スライス型（[]type）は PlantUML 図では正しい参照として扱えないので除外
-    if strings.HasPrefix(dep, "[]") {
-        return false
-    }
-    // マップ型（map[key]value）も除外
-    if strings.HasPrefix(dep, "map[") {
-        return false
-    }
-    // interface{} は PlantUML で問題を起こすので除外
-    if dep == "interface{}" {
-        return false
-    }
-    return true
+	if dep == "" || isPrimitiveString(dep) {
+		return false
+	}
+	// 配列/スライス型（[]type）は PlantUML 図では正しい参照として扱えないので除外
+	if strings.HasPrefix(dep, "[]") {
+		return false
+	}
+	// マップ型（map[key]value）も除外
+	if strings.HasPrefix(dep, "map[") {
+		return false
+	}
+	// interface{} は PlantUML で問題を起こすので除外
+	if dep == "interface{}" {
+		return false
+	}
+	return true
 }
